@@ -1,7 +1,20 @@
 import { Request } from 'express';
-import { JsonController, Param, Body, Get, Post, Put, Delete, Req, Authorized, CurrentUser, HttpError, NotFoundError, InternalServerError } from 'routing-controllers';
+import {
+    Authorized,
+    Body,
+    CurrentUser,
+    Delete,
+    Get,
+    InternalServerError,
+    JsonController,
+    Param,
+    Post,
+    Put,
+    Req
+} from 'routing-controllers';
 import { User } from '../models/User';
 import { UserDetails } from '../models/UserDetails';
+
 @JsonController('/v1/users')
 @Authorized()
 export class UserController {
