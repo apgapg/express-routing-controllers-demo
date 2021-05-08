@@ -26,11 +26,17 @@ const app: Express = createExpressServer({
 
                 const decodedToken: any = jwt.verify(bearerToken, jwt_secret_key,);
 
-                const alrange = promisify(redisClient.lrange).bind(redisClient);
-                const tokenList = await alrange('token', 0, -1);
-                if (tokenList.indexOf(bearerToken) > -1) {
+                const aget = promisify(redisClient.get).bind(redisClient);
+                const cachedToken = await aget(bearerToken);
+                if (cachedToken) {
                     return false;
                 }
+
+                // const alrange = promisify(redisClient.lrange).bind(redisClient);
+                // const tokenList = await alrange('token', 0, -1);
+                // if (tokenList.indexOf(bearerToken) > -1) {
+                //     return false;
+                // }
 
                 action.request.user = new User(decodedToken.name, decodedToken.name, decodedToken.uid, bearerToken);
                 return true;
@@ -48,10 +54,6 @@ const app: Express = createExpressServer({
         stopAtFirstError: true,
     },
     defaultErrorHandler: false,
-})
-app.use((req, response, next) => {
-    response.status(404);
-    response.send("404 not found");
 })
 app.listen(3000, () => {
     console.log('The application is listening on port 3000!');

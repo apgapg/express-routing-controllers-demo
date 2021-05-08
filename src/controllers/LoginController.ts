@@ -4,9 +4,10 @@ import * as jwt from "jsonwebtoken";
 import { IsNotEmpty, IsString } from "class-validator";
 import { redisClient } from "../index";
 import { User } from "../models/User";
+import { promisify } from "util";
 
 export const jwt_secret_key = "sNVPqVWfTN35JRSMF2MDDS4PgdCSkdXZQR3ry6K0QkCoD4woCpqBjxkvDd3ndKh";
-
+export const jwt_expiry_sec = 60;
 class RegisterUserQuery {
     @IsString()
     @IsNotEmpty()
@@ -34,14 +35,16 @@ export class LoginController {
         const uid = "sample-uid";
         const token = jwt.sign({ uid: uid, name: query.name, role: 'admin' },
             jwt_secret_key,
-            { expiresIn: "600000", issuer: "fieldassist.com", });
+            { expiresIn: `${jwt_expiry_sec * 1000}`, issuer: "fieldassist.com", });
         return { uid: uid, token: token };
     }
 
     @Get('/logout')
     @Authorized()
-    doLogout(@Req() request: Request, @CurrentUser({ required: true }) user: User) {
-        redisClient.lpush('token', user.authToken);
+    async doLogout(@Req() request: Request, @CurrentUser({ required: true }) user: User) {
+        const asetex = promisify(redisClient.setex).bind(redisClient);
+        await asetex(user.authToken, jwt_expiry_sec, user.authToken);
+        //redisClient.lpush('token', user.authToken);
         return "Successfully logged out!";
     }
 }
