@@ -2,11 +2,12 @@ import { IsNotEmpty, IsString } from "class-validator";
 import { Request } from "express";
 import * as jwt from "jsonwebtoken";
 import { Authorized, BadRequestError, CurrentUser, Get, JsonController, QueryParams, Req } from "routing-controllers";
-import { asetex } from "../db/redis";
+import { Service } from "typedi";
+import { jwt_secret_key, jwt_expiry_sec } from "../constants/constants";
 import { User } from "../models/User";
+import { RedisService } from "../services/RedisService";
 
-export const jwt_secret_key = "sNVPqVWfTN35JRSMF2MDDS4PgdCSkdXZQR3ry6K0QkCoD4woCpqBjxkvDd3ndKh";
-export const jwt_expiry_sec = 60;
+
 class RegisterUserQuery {
     @IsString()
     @IsNotEmpty()
@@ -22,8 +23,14 @@ class RegisterUserQuery {
     }
 }
 
+
 @JsonController('/v1/login')
+@Service()
 export class LoginController {
+
+    constructor(private redisService: RedisService) {
+        this.redisService = redisService;
+    }
 
     @Get('/register')
     doRegister(@Req() request: Request, @QueryParams() query: RegisterUserQuery) {
@@ -42,7 +49,9 @@ export class LoginController {
     @Get('/logout')
     @Authorized()
     async doLogout(@Req() request: Request, @CurrentUser({ required: true }) user: User) {
-        await asetex(user.authToken, jwt_expiry_sec, user.authToken);
+        if (this.redisService.getRedisClient()) {
+            await this.redisService.getAsyncSetEx(user.authToken, jwt_expiry_sec, user.authToken);
+        }
         //redisClient.lpush('token', user.authToken);
         return "Successfully logged out!";
     }

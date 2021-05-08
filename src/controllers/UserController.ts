@@ -17,6 +17,7 @@ import { UserDetails } from '../models/UserDetails';
 
 @JsonController('/v1/users')
 @Authorized()
+
 export class UserController {
     @Get('/')
     getAll(@Req() request: Request, @CurrentUser({ required: true }) user: User) {

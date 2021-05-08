@@ -1,12 +1,18 @@
 import { Express } from "express";
 import * as jwt from "jsonwebtoken";
 import 'reflect-metadata';
-import { Action, createExpressServer } from 'routing-controllers';
-import { jwt_secret_key, LoginController } from "./controllers/LoginController";
+import { Action, createExpressServer, useContainer } from 'routing-controllers';
+import { Container } from "typedi";
+import { jwt_secret_key } from "./constants/constants";
+import { LoginController } from "./controllers/LoginController";
 import { UserController } from './controllers/UserController';
-import { aget } from './db/redis';
 import { ErrorMiddleware } from './middlewares/ErrorMiddleware';
 import { User } from './models/User';
+import { RedisService } from "./services/RedisService";
+
+// its important to set container before any operation you do with routing-controllers,
+// including importing controllers
+useContainer(Container);
 
 const app: Express = createExpressServer({
     cors: true,
@@ -22,9 +28,16 @@ const app: Express = createExpressServer({
 
                 const decodedToken: any = jwt.verify(bearerToken, jwt_secret_key,);
 
-                const cachedToken = await aget(bearerToken);
-                if (cachedToken) {
-                    return false;
+                try {
+                    const redisService = Container.get(RedisService);
+                    if (redisService) {
+                        const cachedToken = await redisService.getAsyncGet(bearerToken);
+                        if (cachedToken) {
+                            return false;
+                        }
+                    }
+                } catch (error) {
+                    console.log(error);
                 }
 
                 // const alrange = promisify(redisClient.lrange).bind(redisClient);
@@ -32,6 +45,7 @@ const app: Express = createExpressServer({
                 // if (tokenList.indexOf(bearerToken) > -1) {
                 //     return false;
                 // }
+
                 action.request.user = new User(decodedToken.name, decodedToken.name, decodedToken.uid, bearerToken);
                 return true;
             } else {
