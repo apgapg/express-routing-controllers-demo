@@ -1,16 +1,12 @@
-import 'reflect-metadata'
-import { Action, createExpressServer, UnauthorizedError } from 'routing-controllers';
+import { Express } from "express";
+import * as jwt from "jsonwebtoken";
+import 'reflect-metadata';
+import { Action, createExpressServer } from 'routing-controllers';
+import { jwt_secret_key, LoginController } from "./controllers/LoginController";
 import { UserController } from './controllers/UserController';
+import { aget } from './db/redis';
 import { ErrorMiddleware } from './middlewares/ErrorMiddleware';
 import { User } from './models/User';
-import { Express } from "express";
-import { jwt_secret_key, LoginController } from "./controllers/LoginController";
-import * as jwt from "jsonwebtoken";
-import { TokenExpiredError } from "jsonwebtoken";
-import * as redis from "redis";
-import { promisify } from "util";
-
-export const redisClient = redis.createClient();
 
 const app: Express = createExpressServer({
     cors: true,
@@ -26,7 +22,6 @@ const app: Express = createExpressServer({
 
                 const decodedToken: any = jwt.verify(bearerToken, jwt_secret_key,);
 
-                const aget = promisify(redisClient.get).bind(redisClient);
                 const cachedToken = await aget(bearerToken);
                 if (cachedToken) {
                     return false;
@@ -37,7 +32,6 @@ const app: Express = createExpressServer({
                 // if (tokenList.indexOf(bearerToken) > -1) {
                 //     return false;
                 // }
-
                 action.request.user = new User(decodedToken.name, decodedToken.name, decodedToken.uid, bearerToken);
                 return true;
             } else {
@@ -55,6 +49,7 @@ const app: Express = createExpressServer({
     },
     defaultErrorHandler: false,
 })
+
 app.listen(3000, () => {
     console.log('The application is listening on port 3000!');
 })
