@@ -7,6 +7,7 @@ This project demonstrates on usage of following NPM packages:
 3. [class-transformer](https://github.com/typestack/class-transformer)
 4. [jsonwebtoken](https://www.npmjs.com/package/jsonwebtoken)
 5. [redis](https://www.npmjs.com/package/redis)
+6. [ExpressJs](https://expressjs.com/)
 
 ## Key Highlights
 
